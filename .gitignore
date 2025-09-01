@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+.env
+
+# OS
+.DS_Store
+
+
+# Environment
+.env
+
+# Streamlit
+.streamlit/
