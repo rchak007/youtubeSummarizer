@@ -1,5 +1,11 @@
 # YouTube Summarizer 🎥📝
 
+
+
+![image-20250919105609282](./Images/image-20250919105609282.png)
+
+
+
 An AI-powered web app that lets you paste a YouTube link and instantly get a **concise summary** of the video.
  Built with **Streamlit** for the UI, **YouTube transcript extraction** for video text, and **LLMs (e.g., OpenAI GPT)** for natural-language summarization.
 
