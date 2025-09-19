@@ -25,3 +25,7 @@ sample - https://www.youtube.com/watch?v=bPI_YEt6RGQ
 - **Captions missing?** Some videos have no subs → you’ll need the Whisper path (we can add as fallback later).
 - **Token planning**: If you use summaries, keep chunk size reasonable (e.g., 2–3k words per chunk). You can tune the “Max words per chunk” control.
 - **OpenAI key**: Put `OPENAI_API_KEY` in `.env`. Without it, the app runs but summary buttons won’t do anything.
+
+
+URL:
+youtubesummarizer-ai.streamlit.app

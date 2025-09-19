@@ -176,12 +176,14 @@ with st.sidebar:
     st.subheader("Summaries (Optional)")
     style = st.radio("Style", ["Concise (2–3 paragraphs)", "Detailed", "Custom"], index=0)
     custom = st.text_area("Custom instruction (optional)", height=80, placeholder="e.g., Focus on investment insights and action items.")
-    model = st.selectbox("OpenAI model", ["gpt-4o-mini", "gpt-4o"], index=0)
+    # model = st.selectbox("OpenAI model", ["gpt-4o-mini", "gpt-4o"], index=0)
+    model = st.selectbox("OpenAI model", ["gpt-4o-mini"], index=0)
     max_out = st.number_input("Max output tokens", 200, 2000, 700, 50)
     if not HAS_OPENAI:
         st.info("No OPENAI_API_KEY found in .env — transcript & chunking still work; summaries will be disabled.")
 
 col1, col2 = st.columns([1,1])
+
 
 with col1:
     st.subheader("1) Fetch & Clean Transcript")
@@ -223,4 +225,24 @@ with col2:
                             summary = summarize_with_openai(
                                 chunks[i], style=style, custom=custom, model=model, max_output_tokens=max_out
                             )
-                            st.text_area("Summary", summary, height=240, key=f"summary_out_{i}")
+                        # Save the summary for this chunk so we can render it later (centered)
+                        summaries = st.session_state.setdefault("summaries", {})
+                        summaries[i] = summary
+                        st.success(f"Summary for chunk {i+1} ready below 👇")
+
+# ---------- Centered summaries section (global, full-width) ----------
+if st.session_state.get("summaries"):
+    st.markdown("---")
+    c1, c2, c3 = st.columns([1, 3, 1])   # center
+    with c2:
+        for idx in sorted(st.session_state["summaries"].keys()):
+            st.markdown(f"## 📌 Chunk {idx+1} Summary")
+            st.markdown(st.session_state["summaries"][idx])
+
+if st.session_state.get("summaries"):
+    if st.button("Clear summaries"):
+        st.session_state.pop("summaries", None)
+        # st.experimental_rerun()
+        # New (correct)
+        st.rerun()
+
