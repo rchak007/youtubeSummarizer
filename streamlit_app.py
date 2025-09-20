@@ -66,6 +66,54 @@ def list_available_subs(url: str):
     title = info.get("title", "video")
     return title, uploaded, auto
 
+
+def fetch_transcript_and_chunks():
+    """Fetch captions, clean, chunk, and (if available) auto-summarize chunk 1."""
+    url = st.session_state.get("yt_url", "").strip()
+    if not url:
+        return
+
+    with st.spinner("Fetching & preparing transcript…"):   # ⬅️ spinner here
+        try:
+            title, path = download_captions(
+                url,
+                lang=st.session_state.get("lang", "en"),
+                prefer_uploaded=(st.session_state.get("prefer", "Prefer Auto") == "Prefer Uploaded"),
+            )
+            with open(path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            cleaned_lines, paragraph = clean_vtt_or_srt_lines(lines)
+
+            st.session_state["title"] = title
+            st.session_state["paragraph"] = paragraph
+            st.session_state["raw_lines"] = cleaned_lines
+
+            chunks = split_text_by_words(
+                paragraph,
+                n_chunks=st.session_state.get("n_chunks", 4),
+                max_words_per_chunk=st.session_state.get("max_words", 2500),
+            )
+            st.session_state["chunks"] = chunks
+
+            if HAS_OPENAI and chunks:
+                summary = summarize_with_openai(
+                    chunks[0],
+                    style=st.session_state.get("style", "Concise (2–3 paragraphs)"),
+                    custom=st.session_state.get("custom", ""),
+                    model=st.session_state.get("model", "gpt-4o-mini"),
+                    max_output_tokens=st.session_state.get("max_out", 700),
+                )
+                summaries = st.session_state.setdefault("summaries", {})
+                summaries[0] = summary
+                st.toast("Fetched & summarized chunk 1 ✅")
+            else:
+                st.toast("Fetched & chunked ✅")
+
+        except Exception as e:
+            st.error(str(e))
+
+
+
 def download_captions(url: str, lang: str, prefer_uploaded: bool):
     """
     Try preferred source (uploaded or auto); if nothing, try the other.
@@ -156,7 +204,9 @@ st.title("YouTube → Captions → Clean → Chunk → (Optional) Summarize")
 
 with st.sidebar:
     st.header("Controls")
-    url = st.text_input("YouTube URL", value="https://www.youtube.com/watch?v=bPI_YEt6RGQ")
+    url = st.text_input("YouTube URL", value="https://www.youtube.com/watch?v=bPI_YEt6RGQ",
+        key="yt_url",
+        on_change=fetch_transcript_and_chunks )    # ⬅️ Enter triggers fetch + auto-summarize
     # quick helper to see available subs
     if st.button("Show available subtitles"):
         try:
@@ -188,16 +238,18 @@ col1, col2 = st.columns([1,1])
 with col1:
     st.subheader("1) Fetch & Clean Transcript")
     if st.button("Fetch"):
-        with st.spinner("Fetching captions via yt-dlp…"):
+        with st.spinner("Fetching captions via yt-dlp & preparing  ……"):
             try:
-                title, path = download_captions(url, lang=lang, prefer_uploaded=(prefer=="Prefer Uploaded"))
-                with open(path, "r", encoding="utf-8") as f:
-                    lines = f.readlines()
-                cleaned_lines, paragraph = clean_vtt_or_srt_lines(lines)
-                st.session_state["title"] = title
-                st.session_state["paragraph"] = paragraph
-                st.session_state["raw_lines"] = cleaned_lines
-                st.success(f"Got captions for: {title}")
+                fetch_transcript_and_chunks()
+                st.toast("Transcript fetched ✅")   # ⬅️ add this line
+                # title, path = download_captions(url, lang=lang, prefer_uploaded=(prefer=="Prefer Uploaded"))
+                # with open(path, "r", encoding="utf-8") as f:
+                #     lines = f.readlines()
+                # cleaned_lines, paragraph = clean_vtt_or_srt_lines(lines)
+                # st.session_state["title"] = title
+                # st.session_state["paragraph"] = paragraph
+                # st.session_state["raw_lines"] = cleaned_lines
+                # st.success(f"Got captions for: {title}")
             except Exception as e:
                 st.error(str(e))
 
